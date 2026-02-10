@@ -1,12 +1,11 @@
-# Usar una imagen base ligera de Java 21
+# 1. COCINAR (Usar Maven para crear el .jar)
+FROM maven:3.9.6-eclipse-temurin-21 AS build
+WORKDIR /app
+COPY . .
+RUN mvn clean package -DskipTests
+
+# 2. SERVIR (Ejecutar el .jar creado)
 FROM eclipse-temurin:21-jdk-alpine
-
-# Crear un volumen para archivos temporales
-VOLUME /tmp
-
-# Copiar el archivo JAR generado al contenedor
-# Nota: El nombre del JAR debe coincidir con el generado por Maven (artifactId-version.jar)
-COPY target/*.jar app.jar
-
-# Comando de entrada para ejecutar la aplicación
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+ENTRYPOINT ["java","-jar","app.jar"]
