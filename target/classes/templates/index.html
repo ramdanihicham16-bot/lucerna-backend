@@ -11,6 +11,35 @@
     <!-- Leaflet.js CDN -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        .info.legend {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333;
+        }
+        .info.legend h6 {
+            margin: 0 0 5px;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        .ndvi-gradient {
+            width: 100%;
+            height: 15px;
+            background: linear-gradient(to right, #FF0000, #FFFF00, #006400);
+            border-radius: 3px;
+            margin-bottom: 5px;
+        }
+        .ndvi-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body class="bg-light">
 
@@ -198,6 +227,30 @@
     if (bounds.length > 0) {
         map.fitBounds(bounds, { padding: [50, 50] });
     }
+
+    // 5. Leyenda de NDVI
+    const legend = L.control({ position: 'bottomright' });
+
+    legend.onAdd = function (map) {
+        const div = L.DomUtil.create('div', 'info legend');
+        div.innerHTML = `
+            <h6>Índice de Vigor (NDVI)</h6>
+            <div class="ndvi-gradient"></div>
+            <div class="ndvi-labels">
+                <span>0.0</span>
+                <span>0.5</span>
+                <span>1.0</span>
+            </div>
+            <div class="ndvi-labels" style="font-weight: normal; font-size: 10px; margin-top: 2px;">
+                <span>Estrés</span>
+                <span>Medio</span>
+                <span>Óptimo</span>
+            </div>
+        `;
+        return div;
+    };
+
+    legend.addTo(map);
 
     // Función para crear icono circular (rojo/verde)
     function createCircleMarker(finca) {
