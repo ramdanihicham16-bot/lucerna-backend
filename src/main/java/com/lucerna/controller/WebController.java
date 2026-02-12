@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.time.LocalDateTime;
@@ -17,7 +18,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
-@RequestMapping("/")
 public class WebController {
 
     @Autowired
@@ -29,7 +29,7 @@ public class WebController {
     @Autowired
     private AgroService agroService;
 
-    @GetMapping
+    @GetMapping("/")
     public String mostrarInicio(Model model) {
         model.addAttribute("fincas", repositorio.findAll());
 
@@ -75,6 +75,12 @@ public class WebController {
         model.addAttribute("datosFincas", datosPorFinca);
 
         return "index";
+    }
+
+    @GetMapping("/estado")
+    @ResponseBody
+    public String estadoServidor() {
+        return "<h1>Servidor Lucerna Operativo</h1><p>El backend está conectado correctamente.</p>";
     }
 
     @PostMapping("/analizar")

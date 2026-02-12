@@ -132,10 +132,7 @@ public class AgroServiceImpl implements AgroService {
                     double lat = center.get(1).getAsDouble();
 
                     // Comprobar si existe (usando polygonId como criterio de búsqueda)
-                    // Como FincaRepository extiende JpaRepository<Finca, Long>, findById busca por ID de BD.
-                    // Necesitamos buscar por polygonId.
-                    boolean existe = repositorio.findAll().stream()
-                            .anyMatch(f -> id.equals(f.getPolygonId()));
+                    boolean existe = repositorio.findByPolygonId(id).isPresent();
 
                     if (!existe) {
                         Finca nuevaFinca = new Finca(nombre, id, lat, lon);
