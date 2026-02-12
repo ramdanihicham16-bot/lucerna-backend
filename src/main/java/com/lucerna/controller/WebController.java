@@ -29,7 +29,7 @@ public class WebController {
     @Autowired
     private AgroService agroService;
 
-    @GetMapping("/")
+    @GetMapping("/mapa")
     public String mostrarInicio(Model model) {
         model.addAttribute("fincas", repositorio.findAll());
 
