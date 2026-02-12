@@ -8,7 +8,6 @@ com/lucerna/repository/MedicionRepository.class
 com/lucerna/service/impl/PrecioClimaClientSimulado.class
 com/lucerna/scheduler/AnalisisScheduler.class
 com/lucerna/model/Medicion.class
-com/lucerna/controller/HomeController.class
 com/lucerna/model/RegistroSatelital.class
 com/lucerna/CrearPoligono.class
 com/lucerna/service/impl/AgroMonitoringClientHttp.class
