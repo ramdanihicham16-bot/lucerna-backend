@@ -18,8 +18,9 @@
             border-radius: 5px;
             box-shadow: 0 0 15px rgba(0,0,0,0.2);
             font-size: 14px;
-            line-height: 1.5;
+            line-height: 1.2;
             color: #333;
+            min-width: 200px;
         }
         .info.legend h6 {
             margin: 0 0 5px;
@@ -234,17 +235,12 @@
     legend.onAdd = function (map) {
         const div = L.DomUtil.create('div', 'info legend');
         div.innerHTML = `
-            <h6>Índice de Vigor (NDVI)</h6>
+            <h6 class="text-center">Índice de Vigor (NDVI)</h6>
             <div class="ndvi-gradient"></div>
             <div class="ndvi-labels">
-                <span>0.0</span>
-                <span>0.5</span>
-                <span>1.0</span>
-            </div>
-            <div class="ndvi-labels" style="font-weight: normal; font-size: 10px; margin-top: 2px;">
-                <span>Estrés</span>
-                <span>Medio</span>
-                <span>Óptimo</span>
+                <div style="text-align: left; width: 33%;">0.0<br><small>(Suelo/Estrés Crítico)</small></div>
+                <div style="text-align: center; width: 34%;">0.5<br><small>(Vigor Medio)</small></div>
+                <div style="text-align: right; width: 33%;">1.0<br><small>(Salud Óptima)</small></div>
             </div>
         `;
         return div;
@@ -270,15 +266,6 @@
             NDVI: ${finca.ultimoNdvi.toFixed(4)}<br>
             <span style="color: ${color}">Estado: ${finca.ultimoNdvi < 0.5 ? 'Crítico' : 'Bueno'}</span>
         `);
-    }
-
-    // Añadir marcadores
-    if (fincasJS) {
-        fincasJS.forEach(finca => {
-            if (finca.lat && finca.lon) {
-                createCircleMarker(finca);
-            }
-        });
     }
 </script>
 </body>
