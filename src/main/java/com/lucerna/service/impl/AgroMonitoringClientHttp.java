@@ -30,31 +30,8 @@ public class AgroMonitoringClientHttp implements AgroMonitoringClient {
     @Override
     public JsonObject obtenerDatosRecientes(String polygonId) {
         try {
-            // Obtener timestamp de hace 30 días para buscar imágenes recientes de Sentinel-2
-            long start = Instant.now().minus(30, ChronoUnit.DAYS).getEpochSecond();
-            long end = Instant.now().getEpochSecond();
-
-            // Endpoint para obtener imágenes satelitales del polígono
-            String url = String.format("%s/image/search?start=%d&end=%d&polyid=%s&appid=%s",
-                    BASE_URL, start, end, polygonId, apiKey);
-
-            log.info("🛰️ Consultando Sentinel-2 para polygon: {}", polygonId);
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .GET()
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() == 200 && !response.body().equals("[]")) {
-                // Parsear la respuesta JSON (es un array de imágenes)
-                var images = JsonParser.parseString(response.body()).getAsJsonArray();
-
-                if (images.size() > 0) {
-                    // Tomar la imagen más reciente
-                    JsonObject latestImage = images.get(0).getAsJsonObject();
-
+            JsonObject latestImage = obtenerUltimaImagenInfo(polygonId);
+            if (latestImage != null) {
                     // Extraer datos de las bandas (stats contiene información de reflectancia)
                     JsonObject stats = latestImage.has("stats") ?
                             latestImage.getAsJsonObject("stats") : new JsonObject();
@@ -83,7 +60,6 @@ public class AgroMonitoringClientHttp implements AgroMonitoringClient {
 
                     log.info("✅ Datos Sentinel-2 obtenidos correctamente");
                     return result;
-                }
             }
 
             log.warn("⚠️ No se encontraron imágenes recientes, usando datos simulados");
@@ -94,6 +70,34 @@ public class AgroMonitoringClientHttp implements AgroMonitoringClient {
             log.warn("🔄 Usando datos simulados como fallback");
             return getDatoSimulado();
         }
+    }
+
+    @Override
+    public JsonObject obtenerUltimaImagenInfo(String polygonId) {
+        try {
+            long start = Instant.now().minus(30, ChronoUnit.DAYS).getEpochSecond();
+            long end = Instant.now().getEpochSecond();
+
+            String url = String.format("%s/image/search?start=%d&end=%d&polyid=%s&appid=%s",
+                    BASE_URL, start, end, polygonId, apiKey);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200 && !response.body().equals("[]")) {
+                var images = JsonParser.parseString(response.body()).getAsJsonArray();
+                if (images.size() > 0) {
+                    return images.get(0).getAsJsonObject();
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error al obtener info de imagen: {}", e.getMessage());
+        }
+        return null;
     }
 
     /**

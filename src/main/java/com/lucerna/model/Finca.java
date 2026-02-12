@@ -23,6 +23,9 @@ public class Finca {
     private String ultimaRecomendacion;
     private double ultimoNdvi;
 
+    private String tileUrlNdvi;
+    private String tileUrlTrueColor;
+
     public Finca() {}
 
     // Constructor 1: Básico
@@ -59,4 +62,9 @@ public class Finca {
     public void setUltimaRecomendacion(String ultimaRecomendacion) { this.ultimaRecomendacion = ultimaRecomendacion; }
     public double getUltimoNdvi() { return ultimoNdvi; }
     public void setUltimoNdvi(double ultimoNdvi) { this.ultimoNdvi = ultimoNdvi; }
+
+    public String getTileUrlNdvi() { return tileUrlNdvi; }
+    public void setTileUrlNdvi(String tileUrlNdvi) { this.tileUrlNdvi = tileUrlNdvi; }
+    public String getTileUrlTrueColor() { return tileUrlTrueColor; }
+    public void setTileUrlTrueColor(String tileUrlTrueColor) { this.tileUrlTrueColor = tileUrlTrueColor; }
 }

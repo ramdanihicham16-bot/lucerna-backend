@@ -8,6 +8,7 @@ import com.lucerna.model.Finca;
 import com.lucerna.model.Medicion;
 import com.lucerna.repository.FincaRepository;
 import com.lucerna.repository.MedicionRepository;
+import com.lucerna.service.AgroMonitoringClient;
 import com.lucerna.service.AgroService;
 import com.lucerna.service.TelegramService;
 import org.slf4j.Logger;
@@ -47,55 +48,56 @@ public class AgroServiceImpl implements AgroService {
             
     private final Gson gson = new Gson();
 
+    @Autowired
+    private AgroMonitoringClient agroMonitoringClient;
+
     @Override
     public void procesarFinca(Finca finca) {
         log.info("🛰️ Procesando finca: {} (ID: {})", finca.getNombre(), finca.getPolygonId());
 
         try {
-            long end = Instant.now().getEpochSecond();
-            long start = Instant.now().minus(30, ChronoUnit.DAYS).getEpochSecond();
-
-            String url = String.format("http://api.agromonitoring.com/agro/1.0/image/search?polyid=%s&start=%d&end=%d&appid=%s",
-                    finca.getPolygonId(), start, end, apiKey);
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .GET()
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                JsonArray imagenes = gson.fromJson(response.body(), JsonArray.class);
+            JsonObject imageInfo = agroMonitoringClient.obtenerUltimaImagenInfo(finca.getPolygonId());
+            
+            if (imageInfo != null) {
+                double nubes = imageInfo.has("cl") ? imageInfo.get("cl").getAsDouble() : 0.0;
                 
-                if (imagenes != null && !imagenes.isEmpty()) {
-                    // Tomamos la última imagen (la más reciente)
-                    JsonObject últimaImagen = imagenes.get(imagenes.size() - 1).getAsJsonObject();
-                    
-                    double nubes = últimaImagen.has("cl") ? últimaImagen.get("cl").getAsDouble() : 0.0;
-                    double ndviSimulado = (100.0 - nubes) / 100.0;
-
-                    finca.setUltimoNdvi(ndviSimulado);
-                    finca.setNubes(nubes);
-                    finca.setEstado("ACTUALIZADO");
-
-                    // Aplicar lógica de recomendación
-                    if (ndviSimulado < 0.3) {
-                        finca.setUltimaRecomendacion("🚨 RIEGO URGENTE");
-                    } else if (ndviSimulado > 0.8) {
-                        finca.setUltimaRecomendacion("💰 COSECHAR");
-                    } else {
-                        finca.setUltimaRecomendacion("✅ ESTABLE");
-                    }
-
-                    log.info("✅ Datos obtenidos: Nubes {}%, NDVI Calculado {}, Recomendación: {}", 
-                            nubes, ndviSimulado, finca.getUltimaRecomendacion());
+                // Extraer NDVI si está disponible en stats
+                double ndviCalculado = 0.0;
+                if (imageInfo.has("stats") && imageInfo.getAsJsonObject("stats").has("ndvi")) {
+                    ndviCalculado = imageInfo.getAsJsonObject("stats").getAsJsonObject("ndvi").get("mean").getAsDouble();
                 } else {
-                    log.warn("⚠️ No se encontraron imágenes para el periodo solicitado.");
-                    usarDatoSimulado(finca);
+                    // Fallback a cálculo por nubes si no hay stats
+                    ndviCalculado = (100.0 - nubes) / 100.0;
                 }
+
+                finca.setUltimoNdvi(ndviCalculado);
+                finca.setNubes(nubes);
+                finca.setEstado("ACTUALIZADO");
+
+                // Guardar URLs de Tiles
+                if (imageInfo.has("tile")) {
+                    JsonObject tile = imageInfo.getAsJsonObject("tile");
+                    if (tile.has("truecolor")) {
+                        finca.setTileUrlTrueColor(tile.get("truecolor").getAsString());
+                    }
+                    if (tile.has("ndvi")) {
+                        finca.setTileUrlNdvi(tile.get("ndvi").getAsString());
+                    }
+                }
+
+                // Aplicar lógica de recomendación
+                if (ndviCalculado < 0.3) {
+                    finca.setUltimaRecomendacion("🚨 RIEGO URGENTE");
+                } else if (ndviCalculado > 0.8) {
+                    finca.setUltimaRecomendacion("💰 COSECHAR");
+                } else {
+                    finca.setUltimaRecomendacion("✅ ESTABLE");
+                }
+
+                log.info("✅ Datos obtenidos: Nubes {}%, NDVI {}, Recomendación: {}", 
+                        nubes, ndviCalculado, finca.getUltimaRecomendacion());
             } else {
-                log.error("❌ Error en la API de AgroMonitoring. Status: {}", response.statusCode());
+                log.warn("⚠️ No se encontraron imágenes para el periodo solicitado.");
                 usarDatoSimulado(finca);
             }
 

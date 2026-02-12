@@ -4,4 +4,5 @@ import com.google.gson.JsonObject;
 
 public interface AgroMonitoringClient {
     JsonObject obtenerDatosRecientes(String polygonId);
+    JsonObject obtenerUltimaImagenInfo(String polygonId);
 }

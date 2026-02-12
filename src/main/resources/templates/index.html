@@ -139,10 +139,65 @@
 
     const map = L.map('map').setView([defaultLat, defaultLon], zoomLevel);
 
-    // Capa Satelital de Esri
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    // 1. Capas base
+    const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
     }).addTo(map);
+
+    const openStreetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    });
+
+    // Grupos de capas para Agromonitoring
+    const ndviGroup = L.layerGroup();
+    const trueColorGroup = L.layerGroup();
+
+    // 2. Procesar fincas para Tiles y marcadores
+    const bounds = [];
+
+    if (fincasJS) {
+        fincasJS.forEach(finca => {
+            if (finca.lat && finca.lon) {
+                // Añadir marcador
+                createCircleMarker(finca);
+                bounds.push([finca.lat, finca.lon]);
+
+                // Añadir capa NDVI si existe URL
+                if (finca.tileUrlNdvi) {
+                    L.tileLayer(finca.tileUrlNdvi, {
+                        opacity: 0.7,
+                        attribution: 'Agromonitoring NDVI'
+                    }).addTo(ndviGroup);
+                }
+
+                // Añadir capa True Color si existe URL
+                if (finca.tileUrlTrueColor) {
+                    L.tileLayer(finca.tileUrlTrueColor, {
+                        opacity: 1.0,
+                        attribution: 'Agromonitoring True Color'
+                    }).addTo(trueColorGroup);
+                }
+            }
+        });
+    }
+
+    // 3. Control de capas
+    const baseMaps = {
+        "Sátelite (Esri)": esriSatellite,
+        "Mapa (OSM)": openStreetMap
+    };
+
+    const overlayMaps = {
+        "Capa NDVI (Salud)": ndviGroup,
+        "Capa Satélite (Color Real)": trueColorGroup
+    };
+
+    L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+
+    // 4. Ajustar vista a los límites de las fincas
+    if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [50, 50] });
+    }
 
     // Función para crear icono circular (rojo/verde)
     function createCircleMarker(finca) {
